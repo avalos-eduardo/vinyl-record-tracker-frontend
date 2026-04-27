@@ -90,7 +90,9 @@ export default function Login() {
           </button>
         </div>
       </form>
-      <a>Forgot Password?</a>
+      <Link to="/forgot-password" className="underline cursor-pointer">
+        Forgot Password?
+      </Link>
       <p>
         Don't have an account?{" "}
         <Link to="/sign-up" className="underline cursor-pointer">
