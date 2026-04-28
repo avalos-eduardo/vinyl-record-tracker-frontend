@@ -41,6 +41,38 @@ export default function Login() {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "demo@vinyltracker.com",
+          password: "demo123",
+        }),
+      });
+
+      if (!response.ok) {
+        setError("Demo login failed. Please try again.");
+        return;
+      }
+
+      const data = await response.json();
+      localStorage.setItem("token", data.token);
+      navigate("/home");
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <h1 className="text-4xl font-bold">Login</h1>
@@ -99,7 +131,12 @@ export default function Login() {
           Sign up!
         </Link>
       </p>
-      <p>Continue to website with a pre-seeded demo account!</p>
+      <button
+        onClick={handleDemoLogin}
+        className="underline cursor-pointer text-cyan-800"
+      >
+        Continue with demo account
+      </button>
     </>
   );
 }
