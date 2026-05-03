@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -7,6 +8,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +23,7 @@ export default function Login() {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({ email, password }),
         },
       );
@@ -30,9 +33,11 @@ export default function Login() {
         return;
       }
 
-      const data = await response.json();
-      localStorage.setItem("token", data.token);
-      navigate("/home");
+      const success = await login();
+
+      if (success) {
+        navigate("/home");
+      }
     } catch (err) {
       setError("Something went wrong, please try again.");
       console.log(err);
@@ -46,24 +51,27 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8080/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            email: "demo@vinyltracker.com",
+            password: "demo123",
+          }),
         },
-        body: JSON.stringify({
-          email: "demo@vinyltracker.com",
-          password: "demo123",
-        }),
-      });
+      );
 
       if (!response.ok) {
         setError("Demo login failed. Please try again.");
         return;
       }
 
-      const data = await response.json();
-      localStorage.setItem("token", data.token);
+      await login();
       navigate("/home");
     } catch (err) {
       setError("Something went wrong. Please try again.");

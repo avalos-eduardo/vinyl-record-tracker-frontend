@@ -4,26 +4,45 @@ import AuthLayout from "./layouts/AuthLayout";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import { useAuth } from "./context/AuthContext";
+import ProtectedLayout from "./layouts/ProtectedLayout";
 
 export function Welcome() {
   return <p>Welcome to Vinyl Record Collection Tracker</p>;
 }
 
 export function Home() {
-  return <p>Home</p>;
+  const { logout } = useAuth();
+  const handleLogout = async () => {
+    await logout();
+  };
+  return (
+    <>
+      <p>Home</p>
+      <button onClick={handleLogout} className="underline">
+        Logout
+      </button>
+    </>
+  );
 }
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Welcome />} />
+
+      {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/sign-up" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
-      <Route path="home" element={<Home />} />
+
+      {/* Protected Routes */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="home" element={<Home />} />
+      </Route>
     </Routes>
   );
 }
