@@ -36,78 +36,114 @@ export default function ForgotPassword() {
   if (submitted) {
     return (
       <>
-        <h1 className="text-4xl font-bold">Check Your Email</h1>
-        <p className="mt-4 text-center">
-          If an account exists for <span className="font-bold">{email}</span>,
-          you will receive a password reset link shortly.
-        </p>
-        <p className="mt-2 text-center text-sm text-gray-500">
-          Didn't receive an email? Check your spam folder or try again.
-        </p>
-        <button
-          onClick={() => setSubmitted(false)}
-          className="mt-4 underline cursor-pointer"
-        >
-          Try a different email
-        </button>
-        <p className="mt-2">
-          Remember your password?{" "}
-          <Link to="/login" className="underline cursor-pointer">
-            Log in!
-          </Link>
-        </p>
+        <aside className="h-55 md:flex-2 lg:h-auto">
+          <img
+            src="./src/assets/record-player.jpg"
+            className="h-full w-full object-cover"
+          />
+        </aside>
+
+        <section className="md:flex-3 flex-auto h-auto py-5 px-5 md:py-10 md:px-10">
+          <h1 className="my-4 md:my-8 text-[#718b74] font-semibold text-4xl md:text-5xl lg:text-7xl md:max-w-4/5">
+            Check Your Email
+          </h1>
+          <p className="text-sm text-gray-500 max-w-3/5 md:max-w-4/5 md:text-lg">
+            If an account exists for <span className="font-bold">{email}</span>,
+            you will receive a password reset link shortly.
+          </p>
+          <p className="text-sm text-gray-500 max-w-3/5 md:max-w-4/5 md:text-lg mt-5">
+            Didn't receive an email? Check your spam folder or try again.
+          </p>
+          <div className="text-left text-sm font-semibold *:pt-2 md:text-lg">
+            <button
+              onClick={() => setSubmitted(false)}
+              className="mt-4 underline cursor-pointer"
+            >
+              Try a different email
+            </button>
+            <p className="mt-2">
+              Remember your password?{" "}
+              <Link to="/login" className="underline cursor-pointer">
+                Log in!
+              </Link>
+            </p>
+          </div>
+        </section>
       </>
     );
   }
 
   return (
     <>
-      <h1 className="text-4xl font-bold">Forgot Password</h1>
-      <p className="mt-2 text-center text-sm text-gray-500">
-        Enter your email address and we'll send you a link to reset your
-        password.
-      </p>
+      <aside className="h-55 md:flex-2 lg:h-auto">
+        <img
+          src="./src/assets/record-player.jpg"
+          className="h-full w-full object-cover"
+        />
+      </aside>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email-input" className="font-bold">
-            Email Address:
-          </label>
-          <br />
-          <input
-            id="email-input"
-            name="email"
-            type="email"
-            placeholder="Email"
-            className="border px-2 w-75"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+      <section className="md:flex-3 flex-auto h-auto py-5 px-5 md:py-10 md:px-10">
+        <div className="flex items-center">
+          <img
+            src="./src/assets/vinyl-record.jpeg"
+            className="h-9 w-9 rounded-lg md:h-15 md:w-15 md:rounded-2xl"
           />
+          <p className="text-lg pl-3 font-semibold text-[#3C3B3B] md:text-3xl md:pl-4">
+            Vinyl Record Tracker
+          </p>
         </div>
-        <div className="text-center">
-          <button
-            type="submit"
-            disabled={loading}
-            className="font-bold rounded-2xl py-2 px-10 mt-2 cursor-pointer bg-cyan-800 text-white disabled:opacity-50"
-          >
-            {loading ? "Sending..." : "Send Reset Link"}
-          </button>
-        </div>
-      </form>
 
-      <p className="mt-2">
-        Remember your password?{" "}
-        <Link to="/login" className="underline cursor-pointer">
-          Log in!
-        </Link>
-      </p>
-      <p className="mt-1">
-        Don't have an account?{" "}
-        <Link to="/sign-up" className="underline cursor-pointer">
-          Sign up!
-        </Link>
-      </p>
+        <h1 className="my-4 md:mt-8 text-[#718b74] font-semibold text-4xl md:text-5xl lg:text-7xl md:max-w-4/5">
+          Forgot Password
+        </h1>
+        <p className="text-sm text-gray-500 max-w-3/5 md:max-w-4/5 md:text-lg">
+          Enter your email address and we'll send you a link to reset your
+          password.
+        </p>
+
+        <form onSubmit={handleSubmit} className="md:*:mt-3">
+          <div>
+            <label htmlFor="email-input" className="font-bold">
+              Email Address:
+            </label>
+            <br />
+            <input
+              id="email-input"
+              name="email"
+              type="email"
+              placeholder=""
+              className="px-3 w-full h-10 rounded-lg bg-[#D9D9D9] md:w-4/5 md:h-14 md:rounded-lg mt-1 md:text-lg"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="w-full h-10 my-2 md:w-4/5 md:h-14">
+            <button
+              type="submit"
+              disabled={loading}
+              className="font-bold w-full h-full rounded-lg py-2 px-10 mt-2 cursor-pointer bg-[#1E1E1E] text-[#D9D9D9]"
+            >
+              {loading ? "Sending..." : "Send Reset Link"}
+            </button>
+          </div>
+        </form>
+
+        <div className="text-center text-sm font-semibold mt-5 *:pt-2 md:text-left md:text-lg">
+          <p className="mt-2">
+            Remember your password?{" "}
+            <Link to="/login" className="underline cursor-pointer">
+              Log in!
+            </Link>
+          </p>
+          <p className="mt-1">
+            Don't have an account?{" "}
+            <Link to="/sign-up" className="underline cursor-pointer">
+              Sign up!
+            </Link>
+          </p>
+        </div>
+      </section>
     </>
   );
 }
