@@ -11,7 +11,7 @@ export default function AuthLayout() {
   }
 
   return (
-    <main className="flex flex-col h-screen lg:flex-row-reverse">
+    <main className="flex flex-col min-h-screen md:flex-row-reverse">
       <Outlet />
     </main>
   );

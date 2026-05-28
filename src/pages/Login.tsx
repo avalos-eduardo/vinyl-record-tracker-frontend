@@ -83,10 +83,10 @@ export default function Login() {
 
   return (
     <>
-      <aside className="h-55 md:flex-2 lg:h-auto">
+      <aside className="h-55 md:flex-2 md:h-auto">
         <img
           src="./src/assets/record-player.jpg"
-          className="h-full w-full object-cover"
+          className="h-full md:h-screen w-full object-cover md:sticky md:top-0"
         />
       </aside>
 
@@ -100,7 +100,7 @@ export default function Login() {
             Vinyl Record Tracker
           </p>
         </div>
-        <h1 className="my-4 md:my-8 text-[#718b74] font-semibold text-4xl md:text-5xl lg:text-7xl md:max-w-4/5">
+        <h1 className="my-4 md:my-8 text-[#718b74] font-semibold text-4xl md:text-5xl lg:text-6xl md:max-w-4/5">
           Hello!
           <br /> Welcome back.
         </h1>
