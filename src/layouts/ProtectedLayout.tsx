@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import Navbar from "../components/Navbar";
 
 export default function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -10,5 +11,10 @@ export default function ProtectedLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <Navbar />
+      <Outlet />
+    </>
+  );
 }
