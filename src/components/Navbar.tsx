@@ -51,7 +51,7 @@ export default function Navbar() {
 
         {/* menu icon for mobile view */}
         <button
-          className="md:hidden flex flex-col justify-center gap-1.5 p-2"
+          className="md:hidden flex flex-col justify-center gap-1.5 p-2 cursor-pointer"
           onClick={() => setMenuOpen((prev) => !prev)}
           aria-label="Toggle menu"
         >
