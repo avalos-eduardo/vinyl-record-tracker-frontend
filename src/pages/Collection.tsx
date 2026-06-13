@@ -83,7 +83,7 @@ export default function Collection() {
       {/* Header row */}
       <div className="flex items-start justify-between mb-1">
         <div>
-          <h1 className="text-2xl md:text-3xl font-mono font-bold text-[#3C3B3B] max-w-[65%]">
+          <h1 className="text-2xl md:text-3xl font-mono font-bold text-[#3C3B3B] max-w-[65%] md:max-w-full">
             My Vinyl Collection
           </h1>
           <p className="text-sm text-[#718b74] font-mono mt-1">
