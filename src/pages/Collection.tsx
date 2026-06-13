@@ -83,7 +83,7 @@ export default function Collection() {
       {/* Header row */}
       <div className="flex items-start justify-between mb-1">
         <div>
-          <h1 className="text-2xl md:text-3xl font-mono font-bold text-[#3C3B3B]">
+          <h1 className="text-2xl md:text-3xl font-mono font-bold text-[#3C3B3B] max-w-[65%]">
             My Vinyl Collection
           </h1>
           <p className="text-sm text-[#718b74] font-mono mt-1">
@@ -93,7 +93,7 @@ export default function Collection() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-[#3C3B3B] text-white font-mono font-bold px-5 py-2 rounded-full text-sm hover:bg-[#555] transition-colors cursor-pointer"
+          className="bg-[#3C3B3B] text-white font-mono font-bold px-5 py-2 rounded-full text-xs hover:bg-[#555] transition-colors cursor-pointer"
         >
           Add Vinyl
         </button>
@@ -120,7 +120,7 @@ export default function Collection() {
             placeholder="Search by title or artist..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent outline-none text-sm font-mono text-[#3C3B3B] w-full"
+            className="bg-transparent outline-none text-xs font-mono text-[#3C3B3B] w-full"
           />
         </div>
 
