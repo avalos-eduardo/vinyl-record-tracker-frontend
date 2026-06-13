@@ -1,65 +1,55 @@
 import { useEffect, useRef, useState } from "react";
 import VinylCard from "../components/VinylCard";
 import SortDropdown, { type SortState } from "../components/SortDropdown";
+import AddVinylModal from "../components/AddVinylModal";
 
-interface DiscogsRelease {
+interface DiscogsMaster {
   id: number;
-  discogsId: number;
+  masterId: string;
   title: string;
   artist: string;
-  label: string;
-  genre: string;
-  format: string;
-  releaseYear: number;
   imageUrl: string;
-  lastSyncedAt: string;
-}
-
-interface UserVinyl {
-  id: number;
-  condition: string;
-  notes: string;
-  addedAt: string;
-  release: DiscogsRelease;
+  releaseCount: number;
 }
 
 export default function Collection() {
-  const [vinyls, setVinyls] = useState<UserVinyl[]>([]);
+  const [masters, setMasters] = useState<DiscogsMaster[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sortState, setSortState] = useState<SortState>({
-    field: "addedAt",
-    direction: "desc",
+    field: "title",
+    direction: "asc",
   });
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const fetchMasters = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/collection/masters`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        },
+      );
+      if (!response.ok) throw new Error("Failed to fetch collection.");
+      const data = await response.json();
+      setMasters(data);
+    } catch {
+      setError("Could not load your collection. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchVinyls = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/collection`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-          },
-        );
-        if (!response.ok) throw new Error("Failed to fetch collection.");
-        const data = await response.json();
-        setVinyls(data);
-      } catch {
-        setError("Could not load your collection. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchVinyls();
+    fetchMasters();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
@@ -70,26 +60,22 @@ export default function Collection() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const sorted = [...vinyls].sort((a, b) => {
+  const sorted = [...masters].sort((a, b) => {
     const dir = sortState.direction === "asc" ? 1 : -1;
     switch (sortState.field) {
       case "title":
-        return a.release.title.localeCompare(b.release.title) * dir;
+        return a.title.localeCompare(b.title) * dir;
       case "artist":
-        return a.release.artist.localeCompare(b.release.artist) * dir;
-      case "year":
-        return (a.release.releaseYear - b.release.releaseYear) * dir;
-      case "addedAt":
-        return (
-          (new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime()) * dir
-        );
+        return a.artist.localeCompare(b.artist) * dir;
+      default:
+        return 0;
     }
   });
 
   const filtered = sorted.filter(
-    (v) =>
-      v.release.title.toLowerCase().includes(search.toLowerCase()) ||
-      v.release.artist.toLowerCase().includes(search.toLowerCase()),
+    (m) =>
+      m.title.toLowerCase().includes(search.toLowerCase()) ||
+      m.artist.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -101,10 +87,14 @@ export default function Collection() {
             My Vinyl Collection
           </h1>
           <p className="text-sm text-[#718b74] font-mono mt-1">
-            You own: {vinyls.length} Vinyl{vinyls.length !== 1 ? "s" : ""}
+            {masters.length} {masters.length === 1 ? "album" : "albums"} in your
+            collection
           </p>
         </div>
-        <button className="bg-[#3C3B3B] text-white font-mono font-bold px-5 py-2 rounded-full text-sm hover:bg-[#555] transition-colors cursor-pointer">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-[#3C3B3B] text-white font-mono font-bold px-5 py-2 rounded-full text-sm hover:bg-[#555] transition-colors cursor-pointer"
+        >
           Add Vinyl
         </button>
       </div>
@@ -127,14 +117,13 @@ export default function Collection() {
           </svg>
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search by title or artist..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-transparent outline-none text-sm font-mono text-[#3C3B3B] w-full"
           />
         </div>
 
-        {/* Sort button + dropdown */}
         <div className="relative" ref={sortRef}>
           <button
             onClick={() => setSortOpen((prev) => !prev)}
@@ -163,25 +152,31 @@ export default function Collection() {
       )}
       {!isLoading && !error && filtered.length === 0 && (
         <p className="font-mono text-[#3C3B3B] text-center mt-20">
-          No vinyls found. Add some more!
+          {` No albums found. Add some vinyls! :) `}
         </p>
       )}
 
       {/* Grid */}
       {!isLoading && !error && filtered.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {filtered.map((vinyl) => (
+          {filtered.map((master) => (
             <VinylCard
-              key={vinyl.id}
-              albumArt={vinyl.release.imageUrl}
-              title={vinyl.release.title}
-              artist={vinyl.release.artist}
-              year={vinyl.release.releaseYear}
-              condition={vinyl.condition}
-              dateAdded={vinyl.addedAt}
+              key={master.id}
+              masterId={master.id}
+              albumArt={master.imageUrl}
+              title={master.title}
+              artist={master.artist}
+              releaseCount={master.releaseCount}
             />
           ))}
         </div>
+      )}
+
+      {showAddModal && (
+        <AddVinylModal
+          onClose={() => setShowAddModal(false)}
+          onAdded={fetchMasters}
+        />
       )}
     </main>
   );

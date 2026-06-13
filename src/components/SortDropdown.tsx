@@ -1,4 +1,4 @@
-export type SortField = "artist" | "year" | "addedAt" | "title";
+export type SortField = "artist" | "title";
 export type SortDirection = "asc" | "desc";
 
 export interface SortState {
@@ -19,16 +19,6 @@ const SORT_OPTIONS: {
 }[] = [
   { field: "title", ascLabel: "Title (A → Z)", descLabel: "Title (Z → A)" },
   { field: "artist", ascLabel: "Artist (A → Z)", descLabel: "Artist (Z → A)" },
-  {
-    field: "year",
-    ascLabel: "Year (Oldest first)",
-    descLabel: "Year (Newest first)",
-  },
-  {
-    field: "addedAt",
-    ascLabel: "Date Added (Oldest first)",
-    descLabel: "Date Added (Newest first)",
-  },
 ];
 
 export default function SortDropdown({

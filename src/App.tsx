@@ -8,6 +8,8 @@ import ProtectedLayout from "./layouts/ProtectedLayout";
 import Dashboard from "./pages/Dashboard";
 import Collection from "./pages/Collection";
 import Wishlist from "./pages/Wishlist";
+import VinylDetail from "./pages/VinylDetail";
+import MasterReleases from "./pages/MasterReleases";
 
 export function Welcome() {
   return <p>Welcome to Vinyl Record Collection Tracker</p>;
@@ -30,6 +32,14 @@ export default function App() {
       <Route element={<ProtectedLayout />}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="collection" element={<Collection />} />
+        <Route
+          path="collection/masters/:masterId"
+          element={<MasterReleases />}
+        />
+        <Route
+          path="collection/masters/:masterId/releases/:id"
+          element={<VinylDetail />}
+        />
         <Route path="wishlist" element={<Wishlist />} />
       </Route>
     </Routes>
