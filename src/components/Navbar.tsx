@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
+import vinylLogo from "../assets/vinyl-record.jpeg";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function Navbar() {
       <div className="flex justify-between items-center h-20">
         <div className="flex items-center">
           <img
-            src="./src/assets/vinyl-record.jpeg"
+            src={vinylLogo}
             className="h-9 w-9 rounded-lg md:h-12 md:w-12 md:rounded-2xl"
           />
           <p className="text-lg pl-3 font-semibold text-[#3C3B3B] md:text-2xl md:pl-4">
