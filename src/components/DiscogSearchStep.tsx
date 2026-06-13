@@ -5,31 +5,48 @@ interface DiscogSearchStepProps {
   onSelect: (result: DiscogsSearchResult) => void;
 }
 
+const PER_PAGE = 10;
+
 export default function DiscogSearchStep({ onSelect }: DiscogSearchStepProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<DiscogsSearchResult[]>([]);
+  const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+
+  const runSearch = async (searchPage: number, append: boolean) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/discogs/search?query=${encodeURIComponent(query)}&page=${searchPage}`,
+        { credentials: "include" },
+      );
+      if (!response.ok) throw new Error("Search failed.");
+      const data: DiscogsSearchResult[] = await response.json();
+
+      setResults((prev) => (append ? [...prev, ...data] : data));
+      setHasMore(data.length === PER_PAGE);
+      setPage(searchPage);
+    } catch {
+      setError("Could not reach Discogs. Please try again.");
+    }
+  };
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setIsSearching(true);
     setError(null);
     setSearched(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/discogs/search?query=${encodeURIComponent(query)}`,
-        { credentials: "include" },
-      );
-      if (!response.ok) throw new Error("Search failed.");
-      const data = await response.json();
-      setResults(data);
-    } catch {
-      setError("Could not reach Discogs. Please try again.");
-    } finally {
-      setIsSearching(false);
-    }
+    await runSearch(1, false);
+    setIsSearching(false);
+  };
+
+  const handleLoadMore = async () => {
+    setIsLoadingMore(false);
+    await runSearch(page + 1, true);
+    setIsLoadingMore(false);
   };
 
   return (
@@ -56,7 +73,7 @@ export default function DiscogSearchStep({ onSelect }: DiscogSearchStepProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="bg-transparent outline-none text-sm font-mono text-[#3C3B3B] w-full"
+            className="bg-transparent outline-none text-xs font-mono text-[#3C3B3B] w-full"
             autoFocus
           />
         </div>
@@ -84,7 +101,7 @@ export default function DiscogSearchStep({ onSelect }: DiscogSearchStepProps) {
             <li key={result.discogsId}>
               <button
                 onClick={() => onSelect(result)}
-                className="w-full flex gap-3 items-center p-3 rounded-xl hover:bg-[#f0f0f0] transition-colors text-left"
+                className="cursor-pointer w-full flex gap-3 items-center p-3 rounded-xl hover:bg-[#f0f0f0] transition-colors text-left"
               >
                 <img
                   src={result.imageUrl}
@@ -111,6 +128,16 @@ export default function DiscogSearchStep({ onSelect }: DiscogSearchStepProps) {
             </li>
           ))}
         </ul>
+      )}
+      {/* Load More */}
+      {hasMore && (
+        <button
+          onClick={handleLoadMore}
+          disabled={isLoadingMore}
+          className="cursor-pointer w-full bg-[#f0f0f0] text-[#3C3B3B] font-mono font-semibold py-2.5 rounded-full text-sm hover:bg-[#e4e4e4] transition-colors disabled:opacity-40"
+        >
+          {isLoadingMore ? "Loading..." : "Load More"}
+        </button>
       )}
     </div>
   );

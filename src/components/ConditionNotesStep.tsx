@@ -89,7 +89,7 @@ export default function ConditionNotesStep({
             <button
               key={value}
               onClick={() => setCondition(value)}
-              className={`py-2 px-3 rounded-xl text-sm font-mono border transition-colors text-left
+              className={`py-2 px-3 rounded-xl text-sm font-mono border transition-colors text-left cursor-pointer
                 ${
                   condition === value
                     ? "bg-[#718b74] text-white border-[#718b74]"
@@ -122,7 +122,7 @@ export default function ConditionNotesStep({
       <button
         onClick={handleSubmit}
         disabled={!condition || isSubmitting}
-        className="w-full bg-[#3C3B3B] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full bg-[#3C3B3B] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
       >
         {isSubmitting ? "Adding..." : "Add to Collection"}
       </button>
