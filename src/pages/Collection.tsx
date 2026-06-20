@@ -93,7 +93,7 @@ export default function Collection() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-[#3C3B3B] text-white font-mono font-bold px-5 py-2 rounded-full text-xs hover:bg-[#555] transition-colors cursor-pointer"
+          className="bg-[#3C3B3B] text-white font-mono font-bold px-5 py-2 rounded-full text-sm hover:bg-[#555] transition-colors cursor-pointer"
         >
           Add Vinyl
         </button>
@@ -176,6 +176,8 @@ export default function Collection() {
         <AddVinylModal
           onClose={() => setShowAddModal(false)}
           onAdded={fetchMasters}
+          endpoint="/collection"
+          requiresCondition={true}
         />
       )}
     </main>

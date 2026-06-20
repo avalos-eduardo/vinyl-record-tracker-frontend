@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation } from "react-router";
 import type { VinylCondition } from "../components/AddVinylModal";
 
 const CONDITIONS: { value: VinylCondition; label: string }[] = [
@@ -31,6 +31,7 @@ interface UserVinyl {
   condition: VinylCondition;
   notes: string;
   addedAt: string;
+  wishlist: boolean;
   release: DiscogsRelease;
 }
 
@@ -45,6 +46,8 @@ interface PriceHistory {
 export default function VinylDetail() {
   const { id, masterId } = useParams<{ id: string; masterId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isWishlistContext = location.pathname.includes("/wishlist/");
 
   const [vinyl, setVinyl] = useState<UserVinyl | null>(null);
   const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
@@ -55,32 +58,32 @@ export default function VinylDetail() {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSetSaveSuccess] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [isRefreshingPrice, setIsRefreshingPrice] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const context = isWishlistContext ? "wishlist" : "collection";
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/collection/masters/${masterId}/releases/${id}`,
-          {
-            credentials: "include",
-          },
+          `${import.meta.env.VITE_API_URL}/${context}/masters/${masterId}/releases/${id}`,
+          { credentials: "include" },
         );
         if (!res.ok) throw new Error("Vinyl not found.");
         const data: UserVinyl = await res.json();
         setVinyl(data);
-        setCondition(data.condition);
+        setCondition(data.condition ?? "");
         setNotes(data.notes ?? "");
 
-        // Fetch price history using the release id
-        const priceRes = await fetch(
-          `${import.meta.env.VITE_API_URL}/discogs/prices/${data.release.id}`,
-          { credentials: "include" },
-        );
-        if (priceRes.ok) {
-          const priceData = await priceRes.json();
-          setPriceHistory(priceData);
+        // Only fetch price history for collection items
+        if (!isWishlistContext) {
+          const priceRes = await fetch(
+            `${import.meta.env.VITE_API_URL}/discogs/prices/${data.release.id}`,
+            { credentials: "include" },
+          );
+          if (priceRes.ok) {
+            setPriceHistory(await priceRes.json());
+          }
         }
       } catch {
         setError("Could not load this vinyl. Please try again.");
@@ -90,13 +93,13 @@ export default function VinylDetail() {
     };
 
     fetchData();
-  }, [id, masterId]);
+  }, [id, masterId, isWishlistContext]);
 
   const handleSave = async () => {
     if (!condition) return;
     setIsSaving(true);
     setSaveError(null);
-    setSetSaveSuccess(false);
+    setSaveSuccess(false);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/collection/${id}`,
@@ -110,13 +113,40 @@ export default function VinylDetail() {
       if (!res.ok) throw new Error("Failed to save changes.");
       const updated: UserVinyl = await res.json();
       setVinyl(updated);
-      setSetSaveSuccess(true);
-      setTimeout(() => setSetSaveSuccess(false), 2500);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
     } catch {
       setSaveError("Could not save changes. Please try again.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleMoveToCollection = async () => {
+    if (!condition) return;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/wishlist/${id}/move-to-collection`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ condition }),
+        },
+      );
+      if (!res.ok) throw new Error("Failed to move to collection.");
+      navigate(`/collection/masters/${masterId}`);
+    } catch {
+      setSaveError("Could not move to collection. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClearCondition = () => {
+    setCondition("");
   };
 
   const handleRefreshPrice = async () => {
@@ -139,6 +169,36 @@ export default function VinylDetail() {
     }
   };
 
+  const handleSaveWishlistNotes = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/collection/${id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            condition: vinyl?.condition ?? null,
+            notes: notes.trim() || null,
+          }),
+        },
+      );
+      if (!res.ok) throw new Error("Failed to save notes.");
+      const updated: UserVinyl = await res.json();
+      setVinyl(updated);
+      setNotes(updated.notes ?? "");
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch {
+      setSaveError("Could not save notes. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const chartData = priceHistory.map((p) => ({
     date: new Date(p.recordedAt).toLocaleDateString(),
     Low: p.lowestPrice,
@@ -147,7 +207,11 @@ export default function VinylDetail() {
   }));
 
   const isDirty =
-    vinyl && (condition !== vinyl.condition || notes !== (vinyl.notes ?? ""));
+    !isWishlistContext &&
+    vinyl &&
+    (condition !== vinyl.condition || notes !== (vinyl.notes ?? ""));
+
+  const isNotesDirty = notes !== (vinyl?.notes ?? "");
 
   if (isLoading)
     return (
@@ -165,15 +229,22 @@ export default function VinylDetail() {
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-[#f0f0f0] p-6 md:p-10">
+      {/* Back button */}
       <button
-        onClick={() => navigate(`/collection/masters/${masterId}/`)}
+        onClick={() =>
+          navigate(
+            isWishlistContext
+              ? `/wishlist/masters/${masterId}`
+              : `/collection/masters/${masterId}`,
+          )
+        }
         className="flex items-center gap-2 font-mono text-sm text-[#3C3B3B] hover:text-[#718b74] transition-colors mb-6 cursor-pointer"
       >
-        ← Back to Releases
+        ← Back to {isWishlistContext ? "Wishlist" : "Releases"}
       </button>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-8">
-        {/* Left column — art, condition, notes */}
+        {/* Left column */}
         <div className="flex flex-col gap-5">
           <img
             src={vinyl.release.imageUrl}
@@ -181,30 +252,7 @@ export default function VinylDetail() {
             className="w-full aspect-square object-cover rounded-2xl shadow-md"
           />
 
-          {/* Condition */}
-          <div className="flex flex-col gap-2">
-            <p className="font-mono font-semibold text-sm text-[#3C3B3B]">
-              Condition
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {CONDITIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setCondition(value)}
-                  className={`py-2 px-3 rounded-xl text-sm font-mono border transition-colors text-left cursor-pointer
-                    ${
-                      condition === value
-                        ? "bg-[#718b74] text-white border-[#718b74]"
-                        : "bg-white text-[#3C3B3B] border-gray-200 hover:border-[#718b74]"
-                    }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Notes */}
+          {/* Notes — always shown */}
           <div className="flex flex-col gap-2">
             <p className="font-mono font-semibold text-sm text-[#3C3B3B]">
               Notes
@@ -212,35 +260,128 @@ export default function VinylDetail() {
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Original pressing, slight scuff on side B..."
+              placeholder={
+                isWishlistContext
+                  ? "e.g. Want the peach vinyl variant..."
+                  : "e.g. Original pressing, slight scuff on side B..."
+              }
               rows={4}
               className="w-full bg-white rounded-xl px-4 py-3 text-sm font-mono text-[#3C3B3B] outline-none resize-none focus:ring-2 focus:ring-[#718b74] border border-gray-200"
             />
           </div>
 
-          {/* Save button */}
-          {isDirty && (
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-full bg-[#3C3B3B] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40"
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </button>
-          )}
-          {saveSuccess && (
-            <p className="font-mono text-[#718b74] text-sm text-center">
-              Changes saved!
-            </p>
-          )}
-          {saveError && (
-            <p className="font-mono text-red-500 text-sm text-center">
-              {saveError}
-            </p>
+          {/* Action section — branches on wishlist vs collection */}
+          {isWishlistContext ? (
+            <>
+              {/* Save notes independently while still on wishlist */}
+              {isNotesDirty && (
+                <button
+                  onClick={handleSaveWishlistNotes}
+                  disabled={isSaving}
+                  className="w-full bg-[#3C3B3B] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 cursor-pointer"
+                >
+                  {isSaving ? "Saving..." : "Save Notes"}
+                </button>
+              )}
+              {saveSuccess && (
+                <p className="font-mono text-[#718b74] text-sm text-center">
+                  Notes saved!
+                </p>
+              )}
+
+              {/* Condition selector for moving to collection */}
+              <div className="flex flex-col gap-2">
+                <p className="font-mono font-semibold text-sm text-[#3C3B3B]">
+                  Select condition to move to collection
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {CONDITIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setCondition(value)}
+                      className={`py-2 px-3 rounded-xl text-sm font-mono border transition-colors text-left cursor-pointer
+                        ${
+                          condition === value
+                            ? "bg-[#718b74] text-white border-[#718b74]"
+                            : "bg-white text-[#3C3B3B] border-gray-200 hover:border-[#718b74]"
+                        }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={handleMoveToCollection}
+                disabled={!condition || isSaving}
+                className="w-full bg-[#718b74] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#5f7a62] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isSaving ? "Moving..." : "Move to Collection"}
+              </button>
+              <button
+                onClick={handleClearCondition}
+                disabled={!condition || isSaving}
+                className="w-full bg-[#3C3B3B] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Clear Selection
+              </button>
+
+              {saveError && (
+                <p className="font-mono text-red-500 text-sm text-center">
+                  {saveError}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Condition selector */}
+              <div className="flex flex-col gap-2">
+                <p className="font-mono font-semibold text-sm text-[#3C3B3B]">
+                  Condition
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {CONDITIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setCondition(value)}
+                      className={`py-2 px-3 rounded-xl text-sm font-mono border transition-colors text-left cursor-pointer
+                        ${
+                          condition === value
+                            ? "bg-[#718b74] text-white border-[#718b74]"
+                            : "bg-white text-[#3C3B3B] border-gray-200 hover:border-[#718b74]"
+                        }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {isDirty && (
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full bg-[#3C3B3B] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 cursor-pointer"
+                >
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+              )}
+              {saveSuccess && (
+                <p className="font-mono text-[#718b74] text-sm text-center">
+                  Changes saved!
+                </p>
+              )}
+              {saveError && (
+                <p className="font-mono text-red-500 text-sm text-center">
+                  {saveError}
+                </p>
+              )}
+            </>
           )}
         </div>
 
-        {/* Right column — vinyl info + price chart */}
+        {/* Right column */}
         <div className="flex flex-col gap-6">
           {/* Vinyl info card */}
           <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-3">
@@ -269,7 +410,6 @@ export default function VinylDetail() {
               { label: "Color", value: vinyl.release.vinylColor },
               { label: "Barcode", value: vinyl.release.barcode },
               { label: "Year", value: vinyl.release.releaseYear },
-
               {
                 label: "Added",
                 value: new Date(vinyl.addedAt).toLocaleDateString(),
@@ -290,28 +430,30 @@ export default function VinylDetail() {
             )}
           </div>
 
-          {/* Price history chart */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <p className="font-mono font-bold text-[#3C3B3B]">
-                Price History
-              </p>
-              <button
-                onClick={handleRefreshPrice}
-                disabled={isRefreshingPrice}
-                className="text-xs font-mono text-[#718b74] hover:underline disabled:opacity-40"
-              >
-                {isRefreshingPrice ? "Refreshing..." : "Refresh"}
-              </button>
+          {/* Price history chart — collection only */}
+          {!isWishlistContext && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <p className="font-mono font-bold text-[#3C3B3B]">
+                  Price History
+                </p>
+                <button
+                  onClick={handleRefreshPrice}
+                  disabled={isRefreshingPrice}
+                  className="text-xs font-mono text-[#718b74] hover:underline disabled:opacity-40 cursor-pointer"
+                >
+                  {isRefreshingPrice ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
+              {chartData.length === 0 ? (
+                <p className="font-mono text-sm text-gray-400 text-center py-8">
+                  No price data yet. Hit Refresh to fetch from Discogs.
+                </p>
+              ) : (
+                " "
+              )}
             </div>
-            {chartData.length === 0 ? (
-              <p className="font-mono text-sm text-gray-400 text-center py-8">
-                No price data yet. Hit Refresh to fetch from Discogs.
-              </p>
-            ) : (
-              " "
-            )}
-          </div>
+          )}
         </div>
       </div>
     </main>

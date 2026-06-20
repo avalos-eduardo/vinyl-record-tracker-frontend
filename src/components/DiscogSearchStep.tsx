@@ -44,7 +44,7 @@ export default function DiscogSearchStep({ onSelect }: DiscogSearchStepProps) {
   };
 
   const handleLoadMore = async () => {
-    setIsLoadingMore(false);
+    setIsLoadingMore(true);
     await runSearch(page + 1, true);
     setIsLoadingMore(false);
   };

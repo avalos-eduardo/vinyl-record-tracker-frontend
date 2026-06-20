@@ -10,6 +10,7 @@ import Collection from "./pages/Collection";
 import Wishlist from "./pages/Wishlist";
 import VinylDetail from "./pages/VinylDetail";
 import MasterReleases from "./pages/MasterReleases";
+import WishlistMasterReleases from "./pages/WishlistMasterReleases";
 
 export function Welcome() {
   return <p>Welcome to Vinyl Record Collection Tracker</p>;
@@ -41,6 +42,14 @@ export default function App() {
           element={<VinylDetail />}
         />
         <Route path="wishlist" element={<Wishlist />} />
+        <Route
+          path="wishlist/masters/:masterId"
+          element={<WishlistMasterReleases />}
+        />
+        <Route
+          path="wishlist/masters/:masterId/releases/:id"
+          element={<VinylDetail />}
+        />
       </Route>
     </Routes>
   );

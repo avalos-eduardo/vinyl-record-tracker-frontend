@@ -13,12 +13,16 @@ interface ConditionNotesStepProps {
   result: DiscogsSearchResult;
   onClose: () => void;
   onAdded: () => void;
+  endpoint: "/collection" | "/wishlist";
+  requiresCondition: boolean;
 }
 
 export default function ConditionNotesStep({
   result,
   onClose,
   onAdded,
+  endpoint,
+  requiresCondition,
 }: ConditionNotesStepProps) {
   const [condition, setCondition] = useState<VinylCondition | "">("");
   const [notes, setNotes] = useState("");
@@ -26,19 +30,19 @@ export default function ConditionNotesStep({
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!condition) return;
+    if (requiresCondition && !condition) return;
     setIsSubmitting(true);
     setError(null);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/collection`,
+        `${import.meta.env.VITE_API_URL}${endpoint}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
             discogsId: result.discogsId,
-            condition,
+            condition: condition || null,
             notes: notes.trim() || null,
           }),
         },
@@ -80,27 +84,29 @@ export default function ConditionNotesStep({
       </div>
 
       {/* Condition selector */}
-      <div className="flex flex-col gap-2">
-        <label className="font-mono font-semibold text-sm text-[#3C3B3B]">
-          Condition <span className="text-red-400">*</span>
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {CONDITIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setCondition(value)}
-              className={`py-2 px-3 rounded-xl text-sm font-mono border transition-colors text-left cursor-pointer
+      {requiresCondition && (
+        <div className="flex flex-col gap-2">
+          <label className="font-mono font-semibold text-sm text-[#3C3B3B]">
+            Condition <span className="text-red-400">*</span>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {CONDITIONS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setCondition(value)}
+                className={`py-2 px-3 rounded-xl text-sm font-mono border transition-colors text-left cursor-pointer
                 ${
                   condition === value
                     ? "bg-[#718b74] text-white border-[#718b74]"
                     : "bg-white text-[#3C3B3B] border-gray-200 hover:border-[#718b74]"
                 }`}
-            >
-              {label}
-            </button>
-          ))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notes */}
       <div className="flex flex-col gap-2">
@@ -110,7 +116,11 @@ export default function ConditionNotesStep({
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="e.g. Original pressing, slight scuff on side B..."
+          placeholder={
+            requiresCondition
+              ? "e.g. Original pressing, slight scuff on side B..."
+              : "e.g. Want the peach vinyl variant..."
+          }
           rows={3}
           className="w-full bg-[#f0f0f0] rounded-xl px-4 py-3 text-sm font-mono text-[#3C3B3B] outline-none resize-none focus:ring-2 focus:ring-[#718b74]"
         />
@@ -121,10 +131,14 @@ export default function ConditionNotesStep({
       {/* Submit */}
       <button
         onClick={handleSubmit}
-        disabled={!condition || isSubmitting}
+        disabled={(requiresCondition && !condition) || isSubmitting}
         className="w-full bg-[#3C3B3B] text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
       >
-        {isSubmitting ? "Adding..." : "Add to Collection"}
+        {isSubmitting
+          ? "Adding..."
+          : requiresCondition
+            ? "Add to Collection"
+            : "Add to Wishlist"}
       </button>
     </div>
   );

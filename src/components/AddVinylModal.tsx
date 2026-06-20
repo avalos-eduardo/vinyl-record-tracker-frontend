@@ -20,11 +20,15 @@ export interface DiscogsSearchResult {
 interface AddVinylModalProps {
   onClose: () => void;
   onAdded: () => void;
+  endpoint: "/collection" | "/wishlist";
+  requiresCondition: boolean;
 }
 
 export default function AddVinylModal({
   onClose,
   onAdded,
+  endpoint,
+  requiresCondition,
 }: AddVinylModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedResult, setSelectedResult] =
@@ -60,7 +64,11 @@ export default function AddVinylModal({
               </button>
             )}
             <h2 className="font-mono font-bold text-[#3C3B3B] text-lg">
-              {step === 1 ? "Search Discogs" : "Add to Collection"}
+              {step === 1
+                ? "Search Discogs"
+                : requiresCondition
+                  ? "Add to Collection"
+                  : "Add to Wishlist"}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -93,6 +101,8 @@ export default function AddVinylModal({
               result={selectedResult}
               onClose={onClose}
               onAdded={onAdded}
+              endpoint={endpoint}
+              requiresCondition={requiresCondition}
             />
           )}
         </div>
