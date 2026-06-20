@@ -11,6 +11,7 @@ interface DiscogsRelease {
   format: string;
   releaseYear: number;
   imageUrl: string;
+  vinylColor: string | null;
 }
 
 interface UserVinyl {
@@ -167,7 +168,7 @@ export default function MasterReleases() {
             />
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
               <p className="font-mono font-semibold text-sm text-[#3C3B3B]">
-                {vinyl.release.title ?? "Unknown Title"} —{" "}
+                {vinyl.release.vinylColor ?? "Unknown Color"} —{" "}
                 {vinyl.release.releaseYear ?? "Unknown Year"}
               </p>
               <p className="font-mono text-sm text-gray-400">
