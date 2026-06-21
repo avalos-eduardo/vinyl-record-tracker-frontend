@@ -62,11 +62,12 @@ export default function MasterReleases() {
         { method: "DELETE", credentials: "include" },
       );
       if (!res.ok) throw new Error("Failed to delete.");
-      setReleases((prev) => {
-        const updated = prev.filter((v) => v.id !== vinylId);
-        if (updated.length === 0) navigate("/collection");
-        return updated;
-      });
+      const updated = releases.filter((v) => v.id !== vinylId);
+      setReleases(updated);
+
+      if (updated.length === 0) {
+        navigate("/collection");
+      }
     } catch {
       toast.error("Could not delete release. Try again later.");
     } finally {
