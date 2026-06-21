@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import type { VinylCondition } from "../components/AddVinylModal";
+import toast from "react-hot-toast";
 
 const CONDITIONS: { value: VinylCondition; label: string }[] = [
   { value: "MINT", label: "Mint" },
@@ -81,7 +82,7 @@ export default function WishlistMasterReleases() {
         return updated;
       });
     } catch {
-      // silently fail for now = could add an error toast here later
+      toast.error("Could not delete release. Try again later.");
     } finally {
       setDeletingId(null);
     }

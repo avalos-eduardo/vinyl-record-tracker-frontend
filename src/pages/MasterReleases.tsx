@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
+import toast from "react-hot-toast";
 
 interface DiscogsRelease {
   id: number;
@@ -67,7 +68,7 @@ export default function MasterReleases() {
         return updated;
       });
     } catch {
-      // silently fail for now — could add an error toast here later
+      toast.error("Could not delete release. Try again later.");
     } finally {
       setDeletingId(null);
     }

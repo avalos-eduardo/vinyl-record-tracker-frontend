@@ -11,6 +11,7 @@ import Wishlist from "./pages/Wishlist";
 import VinylDetail from "./pages/VinylDetail";
 import MasterReleases from "./pages/MasterReleases";
 import WishlistMasterReleases from "./pages/WishlistMasterReleases";
+import { Toaster } from "react-hot-toast";
 
 export function Welcome() {
   return <p>Welcome to Vinyl Record Collection Tracker</p>;
@@ -18,39 +19,42 @@ export function Welcome() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Welcome />} />
+    <>
+      <Routes>
+        <Route path="/" element={<Welcome />} />
 
-      {/* Auth Routes */}
-      <Route element={<AuthLayout />}>
-        <Route path="login" element={<Login />} />
-        <Route path="sign-up" element={<SignUp />} />
-        <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="reset-password" element={<ResetPassword />} />
-      </Route>
+        {/* Auth Routes */}
+        <Route element={<AuthLayout />}>
+          <Route path="login" element={<Login />} />
+          <Route path="sign-up" element={<SignUp />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
+        </Route>
 
-      {/* Protected Routes */}
-      <Route element={<ProtectedLayout />}>
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="collection" element={<Collection />} />
-        <Route
-          path="collection/masters/:masterId"
-          element={<MasterReleases />}
-        />
-        <Route
-          path="collection/masters/:masterId/releases/:id"
-          element={<VinylDetail />}
-        />
-        <Route path="wishlist" element={<Wishlist />} />
-        <Route
-          path="wishlist/masters/:masterId"
-          element={<WishlistMasterReleases />}
-        />
-        <Route
-          path="wishlist/masters/:masterId/releases/:id"
-          element={<VinylDetail />}
-        />
-      </Route>
-    </Routes>
+        {/* Protected Routes */}
+        <Route element={<ProtectedLayout />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="collection" element={<Collection />} />
+          <Route
+            path="collection/masters/:masterId"
+            element={<MasterReleases />}
+          />
+          <Route
+            path="collection/masters/:masterId/releases/:id"
+            element={<VinylDetail />}
+          />
+          <Route path="wishlist" element={<Wishlist />} />
+          <Route
+            path="wishlist/masters/:masterId"
+            element={<WishlistMasterReleases />}
+          />
+          <Route
+            path="wishlist/masters/:masterId/releases/:id"
+            element={<VinylDetail />}
+          />
+        </Route>
+      </Routes>
+      <Toaster position="bottom-center" />
+    </>
   );
 }
