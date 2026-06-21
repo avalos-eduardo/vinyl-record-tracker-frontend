@@ -36,12 +36,15 @@ export default function WishlistMasterReleases() {
   const [releases, setReleases] = useState<UserVinyl[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [duplicateConflict, setDuplicateConflict] = useState(false);
   const [movingId, setMovingId] = useState<number | null>(null);
   const [selectedCondition, setSelectedCondition] = useState<
     Record<number, VinylCondition>
   >({});
   const [isManaging, setIsManaging] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchReleases = async () => {
@@ -87,7 +90,9 @@ export default function WishlistMasterReleases() {
   const handleMoveToCollection = async (vinylId: number) => {
     const condition = selectedCondition[vinylId];
     if (!condition) return;
-
+    setIsSaving(true);
+    setSaveError(null);
+    setDuplicateConflict(false);
     setMovingId(vinylId);
     try {
       const res = await fetch(
@@ -99,16 +104,53 @@ export default function WishlistMasterReleases() {
           body: JSON.stringify({ condition }),
         },
       );
-      if (!res.ok) throw new Error("Failed to move to collection.");
+      if (res.status === 409) {
+        setDuplicateConflict(true);
+        throw new Error("You already own this release.");
+      }
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to move to collection.");
+      }
       setReleases((prev) => {
         const updated = prev.filter((v) => v.id !== vinylId);
         if (updated.length === 0) navigate("/wishlist");
         return updated;
       });
-    } catch {
-      // could add error toast here
+    } catch (e: unknown) {
+      setSaveError((e as Error).message);
     } finally {
+      setIsSaving(false);
       setMovingId(null);
+    }
+  };
+
+  const handleRemoveFromWishlist = async (vinylId: number) => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/wishlist/${vinylId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      if (!res.ok) return;
+
+      // Check if any releases remain under this master on the wishlist
+      const remainingRes = await fetch(
+        `${import.meta.env.VITE_API_URL}/wishlist/masters/${masterId}/releases`,
+        { credentials: "include" },
+      );
+      const remaining = remainingRes.ok ? await remainingRes.json() : [];
+
+      if (remaining.length === 0) {
+        navigate("/wishlist");
+      } else {
+        navigate(`/wishlist/masters/${masterId}`);
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -261,12 +303,32 @@ export default function WishlistMasterReleases() {
               </button>
               <button
                 onClick={handleClearCondition}
-                disabled={!selectedCondition[vinyl.id] || movingId === vinyl.id}
-                className="bg-[#3C3B3B] px-5 text-white font-mono font-bold py-3 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                disabled={
+                  !selectedCondition[vinyl.id] ||
+                  movingId === vinyl.id ||
+                  isSaving
+                }
+                className="bg-[#3C3B3B] px-5 text-white font-mono font-bold py-2.5 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 Clear Selection
               </button>
             </div>
+            {saveError && (
+              <div>
+                <p className="font-mono text-red-500 text-sm text-center pb-2">
+                  {saveError}
+                </p>
+                {duplicateConflict && (
+                  <button
+                    onClick={() => handleRemoveFromWishlist(vinyl.id)}
+                    disabled={isSaving}
+                    className="w-full bg-[#962020] text-white font-mono font-bold py-2.5 rounded-full text-sm hover:bg-[#a94b4b] transition-colors disabled:opacity-40 cursor-pointer"
+                  >
+                    Remove from Wishlist
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </section>

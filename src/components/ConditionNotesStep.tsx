@@ -49,7 +49,7 @@ export default function ConditionNotesStep({
       );
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || "Failed to add vinyl.");
+        throw new Error(err.error || "Failed to add vinyl.");
       }
       onAdded();
       onClose();

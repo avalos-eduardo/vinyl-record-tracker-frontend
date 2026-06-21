@@ -60,6 +60,7 @@ export default function VinylDetail() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isRefreshingPrice, setIsRefreshingPrice] = useState(false);
+  const [duplicateConflict, setDuplicateConflict] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,6 +127,7 @@ export default function VinylDetail() {
     if (!condition) return;
     setIsSaving(true);
     setSaveError(null);
+    setDuplicateConflict(false);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/wishlist/${id}/move-to-collection`,
@@ -136,10 +138,46 @@ export default function VinylDetail() {
           body: JSON.stringify({ condition }),
         },
       );
-      if (!res.ok) throw new Error("Failed to move to collection.");
+      if (res.status === 409) {
+        setDuplicateConflict(true);
+        throw new Error("You already own this release.");
+      }
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to move to collection.");
+      }
       navigate(`/collection/masters/${masterId}`);
-    } catch {
-      setSaveError("Could not move to collection. Please try again.");
+    } catch (e: unknown) {
+      setSaveError((e as Error).message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveFromWishlist = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/wishlist/${id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      if (!res.ok) return;
+
+      // Check if any releases remain under this master on the wishlist
+      const remainingRes = await fetch(
+        `${import.meta.env.VITE_API_URL}/wishlist/masters/${masterId}/releases`,
+        { credentials: "include" },
+      );
+      const remaining = remainingRes.ok ? await remainingRes.json() : [];
+
+      if (remaining.length === 0) {
+        navigate("/wishlist");
+      } else {
+        navigate(`/wishlist/masters/${masterId}`);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -328,9 +366,20 @@ export default function VinylDetail() {
               </button>
 
               {saveError && (
-                <p className="font-mono text-red-500 text-sm text-center">
-                  {saveError}
-                </p>
+                <div className="flex flex-col gap-2">
+                  <p className="font-mono text-red-500 text-sm text-center">
+                    {saveError}
+                  </p>
+                  {duplicateConflict && (
+                    <button
+                      onClick={handleRemoveFromWishlist}
+                      disabled={isSaving}
+                      className="w-full bg-[#962020] text-white font-mono font-bold py-2.5 rounded-full text-sm hover:bg-[#a94b4b] transition-colors disabled:opacity-40 cursor-pointer"
+                    >
+                      Remove from Wishlist
+                    </button>
+                  )}
+                </div>
               )}
             </>
           ) : (
