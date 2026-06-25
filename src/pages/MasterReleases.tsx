@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import toast from "react-hot-toast";
+import { handleApiError, ToastedError } from "../utils/api";
 
 interface DiscogsRelease {
   id: number;
@@ -57,19 +58,24 @@ export default function MasterReleases() {
     e.stopPropagation();
     setDeletingId(vinylId);
     try {
-      const res = await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/collection/${vinylId}`,
         { method: "DELETE", credentials: "include" },
       );
-      if (!res.ok) throw new Error("Failed to delete.");
+      if (!response.ok) {
+        await handleApiError(response);
+        throw new Error("Failed to delete.");
+      }
       const updated = releases.filter((v) => v.id !== vinylId);
       setReleases(updated);
 
       if (updated.length === 0) {
         navigate("/collection");
       }
-    } catch {
-      toast.error("Could not delete release. Try again later.");
+    } catch (e: unknown) {
+      if (!(e instanceof ToastedError)) {
+        toast.error("Could not delete release. Try again later.");
+      }
     } finally {
       setDeletingId(null);
     }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import type { VinylCondition } from "../components/AddVinylModal";
 import toast from "react-hot-toast";
+import { handleApiError, ToastedError } from "../utils/api";
 
 const CONDITIONS: { value: VinylCondition; label: string }[] = [
   { value: "MINT", label: "Mint" },
@@ -30,6 +31,12 @@ interface UserVinyl {
   release: DiscogsRelease;
 }
 
+interface CardError {
+  vinylId: number;
+  message: string;
+  isDuplicate: boolean;
+}
+
 export default function WishlistMasterReleases() {
   const { masterId } = useParams<{ masterId: string }>();
   const navigate = useNavigate();
@@ -37,15 +44,13 @@ export default function WishlistMasterReleases() {
   const [releases, setReleases] = useState<UserVinyl[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [duplicateConflict, setDuplicateConflict] = useState(false);
+  const [cardError, setCardError] = useState<CardError | null>(null);
   const [movingId, setMovingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedCondition, setSelectedCondition] = useState<
     Record<number, VinylCondition>
   >({});
   const [isManaging, setIsManaging] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchReleases = async () => {
@@ -67,37 +72,62 @@ export default function WishlistMasterReleases() {
     fetchReleases();
   }, [masterId]);
 
+  const deleteFromWishlist = async (vinylId: number) => {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/wishlist/${vinylId}`,
+      { method: "DELETE", credentials: "include" },
+    );
+    if (!res.ok) await handleApiError(res);
+
+    const remainingRes = await fetch(
+      `${import.meta.env.VITE_API_URL}/wishlist/masters/${masterId}/releases`,
+      { credentials: "include" },
+    );
+    const remaining = remainingRes.ok ? await remainingRes.json() : [];
+
+    if (remaining.length === 0) {
+      navigate("/wishlist");
+    } else {
+      setReleases(remaining);
+    }
+  };
+
   const handleDelete = async (e: React.MouseEvent, vinylId: number) => {
     e.stopPropagation();
     setDeletingId(vinylId);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/wishlist/${vinylId}`,
-        { method: "DELETE", credentials: "include" },
-      );
-      if (!res.ok) throw new Error("Failed to delete.");
-      const updated = releases.filter((v) => v.id !== vinylId);
-      setReleases(updated);
-
-      if (updated.length === 0) {
-        navigate("/wishlist");
+      await deleteFromWishlist(vinylId);
+    } catch (e: unknown) {
+      if (!(e instanceof ToastedError)) {
+        toast.error("Could not delete release. Try again later.");
       }
-    } catch {
-      toast.error("Could not delete release. Try again later.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleRemoveFromWishlist = async (vinylId: number) => {
+    setMovingId(vinylId);
+    try {
+      await deleteFromWishlist(vinylId);
+    } catch (e: unknown) {
+      if (!(e instanceof ToastedError)) {
+        toast.error("Could not delete release. Try again later.");
+      }
+    } finally {
+      setMovingId(null);
     }
   };
 
   const handleMoveToCollection = async (vinylId: number) => {
     const condition = selectedCondition[vinylId];
     if (!condition) return;
-    setIsSaving(true);
-    setSaveError(null);
-    setDuplicateConflict(false);
+
     setMovingId(vinylId);
+    setCardError(null);
+
     try {
-      const res = await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/wishlist/${vinylId}/move-to-collection`,
         {
           method: "POST",
@@ -106,58 +136,32 @@ export default function WishlistMasterReleases() {
           body: JSON.stringify({ condition }),
         },
       );
-      if (res.status === 409) {
-        setDuplicateConflict(true);
-        throw new Error("You already own this release.");
+
+      if (response.status === 409) {
+        const err = await response.json();
+        setCardError({
+          vinylId,
+          message: err.error || "You already own this release.",
+          isDuplicate: true,
+        });
+        return;
       }
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to move to collection.");
+
+      if (!response.ok) {
+        await handleApiError(response);
+        return;
       }
-      setReleases((prev) => {
-        const updated = prev.filter((v) => v.id !== vinylId);
-        if (updated.length === 0) navigate("/wishlist");
-        return updated;
-      });
+
+      const updated = releases.filter((v) => v.id !== vinylId);
+      setReleases(updated);
+      if (updated.length === 0) navigate("/wishlist");
     } catch (e: unknown) {
-      setSaveError((e as Error).message);
+      if (!(e instanceof ToastedError)) {
+        toast.error("Could not move release. Try again later.");
+      }
     } finally {
-      setIsSaving(false);
       setMovingId(null);
     }
-  };
-
-  const handleRemoveFromWishlist = async (vinylId: number) => {
-    setIsSaving(true);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/wishlist/${vinylId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-      if (!res.ok) return;
-
-      // Check if any releases remain under this master on the wishlist
-      const remainingRes = await fetch(
-        `${import.meta.env.VITE_API_URL}/wishlist/masters/${masterId}/releases`,
-        { credentials: "include" },
-      );
-      const remaining = remainingRes.ok ? await remainingRes.json() : [];
-
-      if (remaining.length === 0) {
-        navigate("/wishlist");
-      } else {
-        navigate(`/wishlist/masters/${masterId}`);
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleClearCondition = () => {
-    setSelectedCondition({});
   };
 
   if (isLoading)
@@ -214,125 +218,145 @@ export default function WishlistMasterReleases() {
               : "bg-[#3C3B3B] hover:bg-[#555]"
           }`}
         >
-          {isManaging ? "Done" : "Manage Collection"}
+          {isManaging ? "Done" : "Manage Wishlist"}
         </button>
       </div>
 
       <section className="flex flex-col gap-3">
-        {releases.map((vinyl) => (
-          <div
-            key={vinyl.id}
-            className={`relative bg-white rounded-xl p-4 flex flex-col gap-4 shadow-sm transition-shadow ${isManaging ? "" : "hover:shadow-md cursor-pointer"}`}
-          >
-            {/* Delete button */}
-            {isManaging && (
-              <button
-                onClick={(e) => handleDelete(e, vinyl.id)}
-                disabled={deletingId === vinyl.id}
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-[#962020] text-white flex items-center justify-center shadow-md hover:bg-[#a94b4b] transition-colors disabled:opacity-40 cursor-pointer z-10"
-                aria-label="Remove release"
-              >
-                {deletingId === vinyl.id ? (
-                  <span className="text-xs leading-none">...</span>
-                ) : (
-                  <span className="text-sm leading-none font-bold">−</span>
-                )}
-              </button>
-            )}
-            {/* Release info row */}
+        {releases.map((vinyl) => {
+          const thisCardError =
+            cardError?.vinylId === vinyl.id ? cardError : null;
+
+          return (
             <div
-              onClick={() => {
-                if (!isManaging) {
-                  navigate(
-                    `/wishlist/masters/${masterId}/releases/${vinyl.id}`,
-                  );
-                }
-              }}
-              className="flex items-center gap-4 cursor-pointer"
+              key={vinyl.id}
+              className={`relative bg-white rounded-xl p-4 flex flex-col gap-4 shadow-sm transition-shadow ${
+                isManaging ? "" : "hover:shadow-md"
+              }`}
             >
-              <img
-                src={vinyl.release.imageUrl}
-                alt={vinyl.release.title}
-                className="h-16 w-16 rounded-lg object-cover shrink-0"
-              />
-              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <p className="font-mono font-semibold text-sm text-[#3C3B3B]">
-                  {vinyl.release.vinylColor ?? "Unknown Color"} -{" "}
-                  {vinyl.release.releaseYear ?? "Unknown Year"}
-                </p>
-                <p className="font-mono text-sm text-gray-400">
-                  {vinyl.release.label ?? "Unknown Label"}
-                </p>
-              </div>
-            </div>
+              {/* Delete button — manage mode */}
+              {isManaging && (
+                <button
+                  onClick={(e) => handleDelete(e, vinyl.id)}
+                  disabled={deletingId === vinyl.id}
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-[#962020] text-white flex items-center justify-center shadow-md hover:bg-[#a94b4b] transition-colors disabled:opacity-40 cursor-pointer z-10"
+                  aria-label="Remove release"
+                >
+                  {deletingId === vinyl.id ? (
+                    <span className="text-xs leading-none">...</span>
+                  ) : (
+                    <span className="text-sm leading-none font-bold">−</span>
+                  )}
+                </button>
+              )}
 
-            {/* Condition selector */}
-            <div className="flex flex-col gap-2">
-              <p className="font-mono text-xs text-gray-400">
-                Select condition to move to collection:
-              </p>
-              <div className="grid grid-cols-4 gap-1.5">
-                {CONDITIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() =>
-                      setSelectedCondition((prev) => ({
-                        ...prev,
-                        [vinyl.id]: value,
-                      }))
-                    }
-                    className={`py-1.5 px-2 rounded-lg text-xs font-mono border transition-colors cursor-pointer
-                      ${
-                        selectedCondition[vinyl.id] === value
-                          ? "bg-[#718b74] text-white border-[#718b74]"
-                          : "bg-white text-[#3C3B3B] border-gray-200 hover:border-[#718b74]"
-                      }`}
-                  >
-                    {label}
-                  </button>
-                ))}
+              {/* Release info row */}
+              <div
+                onClick={() => {
+                  if (!isManaging) {
+                    navigate(
+                      `/wishlist/masters/${masterId}/releases/${vinyl.id}`,
+                    );
+                  }
+                }}
+                className={`flex items-center gap-4 ${!isManaging ? "cursor-pointer" : ""}`}
+              >
+                <img
+                  src={vinyl.release.imageUrl}
+                  alt={vinyl.release.title}
+                  className="h-16 w-16 rounded-lg object-cover shrink-0"
+                />
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <p className="font-mono font-semibold text-sm text-[#3C3B3B]">
+                    {vinyl.release.vinylColor ??
+                      vinyl.release.format ??
+                      "Unknown Format"}{" "}
+                    — {vinyl.release.releaseYear ?? "Unknown Year"}
+                  </p>
+                  <p className="font-mono text-sm text-gray-400">
+                    {vinyl.release.label ?? "Unknown Label"}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Move to Collection button */}
-            <div className="flex gap-3 *:w-full">
-              <button
-                onClick={() => handleMoveToCollection(vinyl.id)}
-                disabled={!selectedCondition[vinyl.id] || movingId === vinyl.id}
-                className="bg-[#718b74] text-white font-mono font-bold px-5 py-2.5 rounded-full text-sm hover:bg-[#5f7a62] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                {movingId === vinyl.id ? "Moving..." : "Move to Collection"}
-              </button>
-              <button
-                onClick={handleClearCondition}
-                disabled={
-                  !selectedCondition[vinyl.id] ||
-                  movingId === vinyl.id ||
-                  isSaving
-                }
-                className="bg-[#3C3B3B] px-5 text-white font-mono font-bold py-2.5 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                Clear Selection
-              </button>
-            </div>
-            {saveError && (
-              <div>
-                <p className="font-mono text-red-500 text-sm text-center pb-2">
-                  {saveError}
+              {/* Condition selector */}
+              <div className="flex flex-col gap-2">
+                <p className="font-mono text-xs text-gray-400">
+                  Select condition to move to collection:
                 </p>
-                {duplicateConflict && (
-                  <button
-                    onClick={() => handleRemoveFromWishlist(vinyl.id)}
-                    disabled={isSaving}
-                    className="w-full bg-[#962020] text-white font-mono font-bold py-2.5 rounded-full text-sm hover:bg-[#a94b4b] transition-colors disabled:opacity-40 cursor-pointer"
-                  >
-                    Remove from Wishlist
-                  </button>
-                )}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {CONDITIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() =>
+                        setSelectedCondition((prev) => ({
+                          ...prev,
+                          [vinyl.id]: value,
+                        }))
+                      }
+                      className={`py-1.5 px-2 rounded-lg text-xs font-mono border transition-colors cursor-pointer
+                        ${
+                          selectedCondition[vinyl.id] === value
+                            ? "bg-[#718b74] text-white border-[#718b74]"
+                            : "bg-white text-[#3C3B3B] border-gray-200 hover:border-[#718b74]"
+                        }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Move to Collection + Clear */}
+              <div className="flex gap-3 *:w-full">
+                <button
+                  onClick={() => handleMoveToCollection(vinyl.id)}
+                  disabled={
+                    !selectedCondition[vinyl.id] || movingId === vinyl.id
+                  }
+                  className="bg-[#718b74] text-white font-mono font-bold px-5 py-2.5 rounded-full text-sm hover:bg-[#5f7a62] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {movingId === vinyl.id ? "Moving..." : "Move to Collection"}
+                </button>
+                <button
+                  onClick={() =>
+                    setSelectedCondition((prev) => {
+                      const next = { ...prev };
+                      delete next[vinyl.id];
+                      return next;
+                    })
+                  }
+                  disabled={
+                    !selectedCondition[vinyl.id] || movingId === vinyl.id
+                  }
+                  className="bg-[#3C3B3B] px-5 text-white font-mono font-bold py-2.5 rounded-full text-sm hover:bg-[#555] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+
+              {/* Per-card error + duplicate conflict action */}
+              {thisCardError && (
+                <div className="flex flex-col gap-2">
+                  <p className="font-mono text-red-500 text-sm text-center">
+                    {thisCardError.message}
+                  </p>
+                  {thisCardError.isDuplicate && (
+                    <button
+                      onClick={() => handleRemoveFromWishlist(vinyl.id)}
+                      disabled={movingId === vinyl.id}
+                      className="w-full bg-[#962020] text-white font-mono font-bold py-2.5 rounded-full text-sm hover:bg-[#a94b4b] transition-colors disabled:opacity-40 cursor-pointer"
+                    >
+                      {movingId === vinyl.id
+                        ? "Removing..."
+                        : "Remove from Wishlist"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </section>
     </main>
   );

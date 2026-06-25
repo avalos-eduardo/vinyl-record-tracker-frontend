@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import type { VinylCondition } from "../components/AddVinylModal";
+import { handleApiError, ToastedError } from "../utils/api";
+import toast from "react-hot-toast";
 
 const CONDITIONS: { value: VinylCondition; label: string }[] = [
   { value: "MINT", label: "Mint" },
@@ -102,7 +104,7 @@ export default function VinylDetail() {
     setSaveError(null);
     setSaveSuccess(false);
     try {
-      const res = await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/collection/${id}`,
         {
           method: "PUT",
@@ -111,13 +113,19 @@ export default function VinylDetail() {
           body: JSON.stringify({ condition, notes: notes.trim() || null }),
         },
       );
-      if (!res.ok) throw new Error("Failed to save changes.");
-      const updated: UserVinyl = await res.json();
+      if (!response.ok) {
+        await handleApiError(response);
+        throw new Error("Failed to save changes.");
+      }
+      const updated: UserVinyl = await response.json();
       setVinyl(updated);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
-    } catch {
-      setSaveError("Could not save changes. Please try again.");
+    } catch (e: unknown) {
+      if (!(e instanceof ToastedError)) {
+        toast.error("Could not save changes. Try again later.");
+      }
+      setSaveError("Could not save changes. Try again later.");
     } finally {
       setIsSaving(false);
     }
@@ -129,7 +137,7 @@ export default function VinylDetail() {
     setSaveError(null);
     setDuplicateConflict(false);
     try {
-      const res = await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/wishlist/${id}/move-to-collection`,
         {
           method: "POST",
@@ -138,17 +146,21 @@ export default function VinylDetail() {
           body: JSON.stringify({ condition }),
         },
       );
-      if (res.status === 409) {
+      if (response.status === 409) {
         setDuplicateConflict(true);
         throw new Error("You already own this release.");
       }
-      if (!res.ok) {
-        const err = await res.json();
+      if (!response.ok) {
+        const err = await response.json();
+        await handleApiError(response);
         throw new Error(err.error || "Failed to move to collection.");
       }
       navigate(`/collection/masters/${masterId}`);
     } catch (e: unknown) {
-      setSaveError((e as Error).message);
+      if (!(e instanceof ToastedError)) {
+        toast.error("Could not move to collection. Try again later.");
+        setSaveError((e as Error).message);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -157,14 +169,17 @@ export default function VinylDetail() {
   const handleRemoveFromWishlist = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/wishlist/${id}`,
         {
           method: "DELETE",
           credentials: "include",
         },
       );
-      if (!res.ok) return;
+      if (!response.ok) {
+        await handleApiError(response);
+        return;
+      }
 
       // Check if any releases remain under this master on the wishlist
       const remainingRes = await fetch(
@@ -224,13 +239,18 @@ export default function VinylDetail() {
           }),
         },
       );
-      if (!res.ok) throw new Error("Failed to save notes.");
+      if (!res.ok) {
+        await handleApiError(res);
+      }
       const updated: UserVinyl = await res.json();
       setVinyl(updated);
       setNotes(updated.notes ?? "");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
-    } catch {
+    } catch (e: unknown) {
+      if (!(e instanceof ToastedError)) {
+        toast.error("Could not save notes. Try again later.");
+      }
       setSaveError("Could not save notes. Please try again.");
     } finally {
       setIsSaving(false);

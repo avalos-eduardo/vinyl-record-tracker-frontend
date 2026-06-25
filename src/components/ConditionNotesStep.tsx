@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { DiscogsSearchResult, VinylCondition } from "./AddVinylModal";
+import { handleApiError } from "../utils/api";
 
 const CONDITIONS: { value: VinylCondition; label: string }[] = [
   { value: "MINT", label: "Mint" },
@@ -48,13 +49,14 @@ export default function ConditionNotesStep({
         },
       );
       if (!response.ok) {
+        await handleApiError(response);
         const err = await response.json();
         throw new Error(err.error || "Failed to add vinyl.");
       }
       onAdded();
       onClose();
-    } catch (e: unknown) {
-      setError((e as Error).message);
+    } catch {
+      setError("Failed to add, try again later.");
     } finally {
       setIsSubmitting(false);
     }
