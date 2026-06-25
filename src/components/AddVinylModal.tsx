@@ -15,6 +15,7 @@ export interface DiscogsSearchResult {
   imageUrl: string;
   vinylColor: string;
   formatDescriptions: string[];
+  country: string;
 }
 
 interface AddVinylModalProps {

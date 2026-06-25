@@ -117,10 +117,11 @@ export default function DiscogSearchStep({ onSelect }: DiscogSearchStepProps) {
                   </p>
                   <p className="font-mono text-xs text-gray-400">
                     {result.releaseYear}
+                    {result.country ? ` · ${result.country}` : ""}
                     {result.label ? ` · ${result.label}` : ""}
                     {result.vinylColor ? ` · ${result.vinylColor}` : ""}
-                    {result.formatDescriptions
-                      ? ` · ${result.formatDescriptions.map((result) => ` ${result}`)}`
+                    {result.formatDescriptions?.length > 0
+                      ? ` · ${result.formatDescriptions.join(" · ")}`
                       : ""}
                   </p>
                 </div>

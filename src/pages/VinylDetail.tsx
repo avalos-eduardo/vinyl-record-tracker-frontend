@@ -26,6 +26,7 @@ interface DiscogsRelease {
   vinylColor: string | null;
   formatDescriptions: string[];
   barcode: string | null;
+  country: string | null;
 }
 
 interface UserVinyl {
@@ -479,6 +480,7 @@ export default function VinylDetail() {
               { label: "Color", value: vinyl.release.vinylColor },
               { label: "Barcode", value: vinyl.release.barcode },
               { label: "Year", value: vinyl.release.releaseYear },
+              { label: "Country", value: vinyl.release.country },
               {
                 label: "Added",
                 value: new Date(vinyl.addedAt).toLocaleDateString(),
