@@ -38,14 +38,6 @@ interface UserVinyl {
   release: DiscogsRelease;
 }
 
-interface PriceHistory {
-  id: number;
-  lowestPrice: number;
-  medianPrice: number;
-  highestPrice: number;
-  recordedAt: string;
-}
-
 export default function VinylDetail() {
   const { id, masterId } = useParams<{ id: string; masterId: string }>();
   const navigate = useNavigate();
@@ -53,7 +45,6 @@ export default function VinylDetail() {
   const isWishlistContext = location.pathname.includes("/wishlist/");
 
   const [vinyl, setVinyl] = useState<UserVinyl | null>(null);
-  const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +53,6 @@ export default function VinylDetail() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [isRefreshingPrice, setIsRefreshingPrice] = useState(false);
   const [duplicateConflict, setDuplicateConflict] = useState(false);
 
   useEffect(() => {
@@ -78,17 +68,6 @@ export default function VinylDetail() {
         setVinyl(data);
         setCondition(data.condition ?? "");
         setNotes(data.notes ?? "");
-
-        // Only fetch price history for collection items
-        if (!isWishlistContext) {
-          const priceRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/discogs/prices/${data.release.id}`,
-            { credentials: "include" },
-          );
-          if (priceRes.ok) {
-            setPriceHistory(await priceRes.json());
-          }
-        }
       } catch {
         setError("Could not load this vinyl. Please try again.");
       } finally {
@@ -203,26 +182,6 @@ export default function VinylDetail() {
     setCondition("");
   };
 
-  const handleRefreshPrice = async () => {
-    if (!vinyl) return;
-    setIsRefreshingPrice(true);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/collection/${vinyl.id}/refresh-price`,
-        { method: "POST", credentials: "include" },
-      );
-      if (res.ok) {
-        const priceRes = await fetch(
-          `${import.meta.env.VITE_API_URL}/discogs/prices/${vinyl.release.id}`,
-          { credentials: "include" },
-        );
-        if (priceRes.ok) setPriceHistory(await priceRes.json());
-      }
-    } finally {
-      setIsRefreshingPrice(false);
-    }
-  };
-
   const handleSaveWishlistNotes = async () => {
     setIsSaving(true);
     setSaveError(null);
@@ -257,13 +216,6 @@ export default function VinylDetail() {
       setIsSaving(false);
     }
   };
-
-  const chartData = priceHistory.map((p) => ({
-    date: new Date(p.recordedAt).toLocaleDateString(),
-    Low: p.lowestPrice,
-    Median: p.medianPrice,
-    High: p.highestPrice,
-  }));
 
   const isDirty =
     !isWishlistContext &&
@@ -500,31 +452,6 @@ export default function VinylDetail() {
                 ),
             )}
           </div>
-
-          {/* Price history chart — collection only */}
-          {!isWishlistContext && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <p className="font-mono font-bold text-[#3C3B3B]">
-                  Price History
-                </p>
-                <button
-                  onClick={handleRefreshPrice}
-                  disabled={isRefreshingPrice}
-                  className="text-xs font-mono text-[#718b74] hover:underline disabled:opacity-40 cursor-pointer"
-                >
-                  {isRefreshingPrice ? "Refreshing..." : "Refresh"}
-                </button>
-              </div>
-              {chartData.length === 0 ? (
-                <p className="font-mono text-sm text-gray-400 text-center py-8">
-                  No price data yet. Hit Refresh to fetch from Discogs.
-                </p>
-              ) : (
-                " "
-              )}
-            </div>
-          )}
         </div>
       </div>
     </main>
