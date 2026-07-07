@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import Widget from "../components/Widget";
 import ConditionChart from "../components/ConditionChart";
 import DecadeChart from "../components/DecadeChart";
+import userSVG from "../assets/user.svg";
 
 interface CollectionGrowthPoint {
   date: string;
@@ -50,7 +51,7 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="bg-[#718b74] flex flex-col items-center justify-center gap-4 p-6">
         <div className="h-28 w-28 rounded-full p-5 object-cover border-0 bg-white">
-          <img src="./src/assets/user.svg" className="h-auto" />
+          <img src={userSVG} className="h-auto" />
         </div>
         <div className="text-center">
           <p className="text-white font-bold text-2xl italic">

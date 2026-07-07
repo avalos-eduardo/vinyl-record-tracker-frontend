@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
+import recordPlayer from "../assets/record-player.jpg";
+import vinylRecord from "../assets/vinyl-record.png";
 
 export default function SignUp() {
   const [name, setName] = useState("");
@@ -64,7 +66,7 @@ export default function SignUp() {
     <>
       <aside className="h-55 md:flex-2 md:h-auto">
         <img
-          src="./src/assets/record-player.jpg"
+          src={recordPlayer}
           className="h-full md:h-screen w-full object-cover md:sticky md:top-0"
         />
       </aside>
@@ -72,7 +74,7 @@ export default function SignUp() {
       <section className="md:flex-3 flex-auto h-auto py-5 px-5 md:py-10 md:px-10">
         <div className="flex items-center">
           <img
-            src="./src/assets/vinyl-record.png"
+            src={vinylRecord}
             className="h-9 w-9 rounded-lg md:h-15 md:w-15 md:rounded-2xl"
           />
           <p className="text-lg pl-3 font-semibold text-[#3C3B3B] md:text-3xl md:pl-4">
