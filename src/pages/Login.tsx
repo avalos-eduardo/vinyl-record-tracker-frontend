@@ -72,7 +72,7 @@ export default function Login() {
       }
 
       await login();
-      navigate("/home");
+      navigate("/dashboard");
     } catch (err) {
       setError("Something went wrong. Please try again.");
       console.log(err);
