@@ -36,7 +36,7 @@ export default function Login() {
       const success = await login();
 
       if (success) {
-        navigate("/home");
+        navigate("/dashboard");
       }
     } catch (err) {
       setError("Something went wrong, please try again.");
