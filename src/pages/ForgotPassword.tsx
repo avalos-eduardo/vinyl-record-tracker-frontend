@@ -85,7 +85,7 @@ export default function ForgotPassword() {
       <section className="md:flex-3 flex-auto h-auto py-5 px-5 md:py-10 md:px-10">
         <div className="flex items-center">
           <img
-            src="./src/assets/vinyl-record.jpeg"
+            src="./src/assets/vinyl-record.png"
             className="h-9 w-9 rounded-lg md:h-15 md:w-15 md:rounded-2xl"
           />
           <p className="text-lg pl-3 font-semibold text-[#3C3B3B] md:text-3xl md:pl-4">

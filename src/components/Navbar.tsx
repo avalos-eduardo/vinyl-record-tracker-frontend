@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
-import vinylLogo from "../assets/vinyl-record.jpeg";
+import vinylLogo from "../assets/vinyl-record.png";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
