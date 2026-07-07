@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import recordPlayer from "../assets/record-player.jpg";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -81,7 +82,7 @@ export default function ResetPassword() {
       <>
         <aside className="h-55 md:flex-2 md:h-auto">
           <img
-            src="./src/assets/record-player.jpg"
+            src={recordPlayer}
             className="h-full md:h-screen w-full object-cover md:sticky md:top-0"
           />
         </aside>
@@ -110,7 +111,7 @@ export default function ResetPassword() {
     <>
       <aside className="h-55 md:flex-2 md:h-auto">
         <img
-          src="./src/assets/record-player.jpg"
+          src={recordPlayer}
           className="h-full md:h-screen w-full object-cover md:sticky md:top-0"
         />
       </aside>
