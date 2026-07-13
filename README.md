@@ -1,73 +1,38 @@
-# React + TypeScript + Vite
+# Vinyl Record Collection Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack web application for tracking your vinyl record collection and wishlist built to demonstrate a project with CRUD functionalities, authentication and authorization handling, external data integration, relational database usage, deployment, and system design. And also for personal use!
 
-Currently, two official plugins are available:
+## Website Link
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+[Website Link](https://vinyl-record-tracker.com/) | [Frontend Repo](https://github.com/avalos-eduardo/vinyl-record-tracker-frontend) | [Backend Repo](https://github.com/avalos-eduardo/vinyl-record-tracker) |
 
-## React Compiler
+Try it out instantly with the read-only demo account!
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, React Router, Chart.js, react-hot-toast
+- **Backend:** Java, Spring Boot, Spring Security, Hibernate / JPA
+- **Database:** PostgreSQL
+- **Deployment:** Cloudflare Pages (Frontend), Railway (Backend & PostgreSQL)
+- **External Integrations:** Discogs API for vinyl record data & Resend for sending emails
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Live catalog search** via the Discogs API — search by title or artist, browse paginated results with format, label, and vinyl color shown inline
+- **Collection & Wishlist**, sharing the same underlying data model — move an item from wishlist to collection with one click
+- **Master → Release → Copy hierarchy** — the collection page groups by album; drilling in shows every pressing you own of that album
+- **Editable condition & notes** per copy, updatable at any time
+- **Dashboard statistics** — total records, most collected artist, unique artists, condition breakdown, and records-by-decade, visualized with Chart.js
+- **Stateless JWT authentication** alongside a public read-only demo account (mutating actions are blocked server-side and surfaced with clear toast messaging)
+- **Password Resets** offered through the use of temporary reset tokens and automatic emails powerered by Resend
+- **Responsive design** — full functionality from mobile through desktop
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Screenshots
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+![Login](./src/assets/vinyl-login.png)
+![Dashboard](./src/assets/vinyl-dashboard.png)
+![Collection](./src/assets/vinyl-collection.png)
+![Vinyl Releases](./src/assets/vinyl-releases.png)
+![Vinyl Release Details](./src/assets/vinyl-release-details.png)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
